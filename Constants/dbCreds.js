@@ -1,0 +1,5 @@
+export const user = 'postgres'
+export const host = 'localhost'
+export const database = 'postgres'
+export const password = '1234'
+export const port = '5432'
