@@ -5,9 +5,10 @@ import { basicUserDetails } from "../Constants/defaultModelData.js";
 import { skipTopComments } from "../Constants/randomConstant.js";
 import SQL from "sequelize";
 const { Sequelize, Model, DataTypes } = SQL;
+import cloudinary from "../../utils/cloudinary.js";
 export const getPosts = async ({ args, context }) => {
   const { pageNo } = args.input;
-  let limit = 10;
+  let limit = 5;
   let resObj = {};
   try {
     let data = await POST.findAll({
@@ -31,14 +32,12 @@ export const getPosts = async ({ args, context }) => {
         },
       ],
     });
-    
+
     data = data.map((item, index) => {
-     
       const tempComments = item.dataValues.comments;
       let comments = [];
       if (tempComments.length > 0) {
         comments = tempComments.map((commentItem, index) => {
-          
           return {
             ...commentItem.dataValues,
             userData: commentItem.dataValues.user.dataValues,
@@ -77,7 +76,15 @@ export const createPost = async ({ args, context }) => {
       body[key] = value;
     }
   }
+  console.log(context.authScope.req.userSession.userId)
   body["postedBy"] = context.authScope.req.userSession.userId;
+  if (body["mediaLink"]) {
+    const mediaRes = await cloudinary.uploader.upload(body["mediaLink"]);
+    body["mediaLink"] = mediaRes.url;
+  } else {
+    body["mediaLink"] = false;
+  }
+
   try {
     const res = await POST.create({ ...body });
     if (res) {
@@ -94,21 +101,22 @@ export const createPost = async ({ args, context }) => {
     }
   } catch (err) {
     resObj = { error: "Custom error", success: false, message: "error" };
-    console.log(err);
+    console.log("error", err);
   }
+  console.log(resObj);
   return resObj;
 };
 export const likePost = async ({ args, context }) => {
   let { postId } = args.input;
   let resObj = {};
   const userId = context.authScope.req.userSession.userId;
-  
+
   let body = {
     likes: Sequelize.fn("array_append", Sequelize.col(`likes`), userId),
   };
   try {
     const getPost = await POST.findOne({ where: { id: postId } });
-  
+
     if (getPost?.dataValues?.likes?.includes(userId)) {
       resObj = {
         success: false,

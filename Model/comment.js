@@ -6,7 +6,7 @@ import sequelize from "../utils/database.js";
 const COMMENT = sequelize.define(
   "comment",
   {
-    //id===commentId making it id so there 
+    //id===commentId making it id so there
     id: {
       type: DataTypes.UUID,
       defaultValue: Sequelize.UUIDV4,
@@ -22,7 +22,7 @@ const COMMENT = sequelize.define(
     //   type: DataTypes.UUID,
     //   allowNull: false,
     // },
-    comment: DataTypes.STRING,
+    comment: { allowNull: false, type: DataTypes.STRING },
   },
   {
     timestamps: true,

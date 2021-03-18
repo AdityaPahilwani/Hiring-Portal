@@ -21,6 +21,7 @@ export const createComment = async ({ args, context }) => {
     
     resObj = { success: true, message: "comment posted" };
   } catch (err) {
+    console.log(err)
     resObj = { error: "Custom error", success: false, message: "error" };
   }
   return resObj;
@@ -34,10 +35,10 @@ export const getComments = async ({ args, context }) => {
   try {
     let data = await COMMENT.findAll({
       where: { postId: postId },
-      offset: skipTopComments + pageNo * limit,
+      offset:  pageNo * limit,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["comment"],
+      attributes: ["comment",'id'],
       include: [
         {
           ...basicUserDetails,

@@ -6,6 +6,15 @@ import bcrypt from "bcryptjs";
 export const createUser = async ({ args, context }) => {
   const { name, email, gender, bio, password } = args.input;
   let resObj = {};
+  let profilePic;
+  console.log(args.input);
+  if (gender === "Male") {
+    profilePic =
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdDIZrF6XF_2t2UMsPyfkuwZfvagwvN-seTwA0LMHhlLAy7ykG56D7ALt54c-q9t3mMyc&usqp=CAU";
+  } else {
+    profilePic =
+      "https://cdn1.vectorstock.com/i/1000x1000/45/70/female-avatar-profile-picture-silhouette-light-vector-4684570.jpg";
+  }
   try {
     const userExist = await USER.findOne({ where: { email } });
     if (!userExist) {
@@ -15,6 +24,7 @@ export const createUser = async ({ args, context }) => {
         email,
         gender,
         bio,
+        profilePic: profilePic,
         password: hashedPassword,
       });
       context.authScope.req.userSession.userId = res.dataValues.id;
@@ -43,7 +53,9 @@ export const signIn = async ({ args, context }) => {
   try {
     const res = await USER.findOne({ where: { email } });
     const checkPass = await bcrypt.compare(password, res.dataValues.password);
+    context.authScope.req.userData = res.dataValues;
     context.authScope.req.userSession.userId = res.dataValues.id;
+    console.log("cookie set", context.authScope.req.userSession.userId);
     if (checkPass) {
       resObj = {
         success: true,
@@ -141,7 +153,7 @@ export const requestToFollowUser = async ({ args, context }) => {
       };
     }
   } catch (err) {
-    console.log(err)
+    console.log(err);
     resObj = { error: "Custom error", success: false, message: "error" };
   }
   return resObj;
@@ -241,7 +253,7 @@ export const declineFollowRequest = async ({ args, context }) => {
 export const unFollowUser = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
   const ID = context.authScope.req.userSession.userId;
-  let resObj={}
+  let resObj = {};
   try {
     let adminBody = {
       following: Sequelize.fn(
