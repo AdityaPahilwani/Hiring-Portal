@@ -102,22 +102,22 @@ export const getPostWithId = async ({ args, context }) => {
       }
     );
 
-    data = data.dataValues;
-    console.log(data);
-    const tempComments = data.comments;
+    data = data?.dataValues;
+    
+    const tempComments = data?.comments;
     let comments = [];
     if (tempComments?.length > 0) {
       comments = tempComments.map((commentItem, index) => {
         return {
           ...commentItem.dataValues,
-          userData: commentItem.dataValues.user.dataValues,
+          userData: commentItem?.dataValues?.user?.dataValues,
         };
       });
     }
     console.log(data.likes);
     data.postedBy = data.user;
     data.comments = comments;
-    data.likes = data.likes ? data.dataValues.likes.length : 0;
+    data.likes = data.likes ? data.likes.length : 0;
     console.log(data);
     resObj = {
       success: true,

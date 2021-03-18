@@ -8,15 +8,20 @@ export const isAuthorized = async ({ context }) => {
     if (context.authScope.req.headers.authorization) {
       const id = context.authScope.req.headers.authorization;
       context.authScope.req.userSession.userId = id;
-      const res = await USER.findOne({ where: { id: id } });
-      context.authScope.req.userData = res.dataValues;
-      console.log(
-        "from auth check",
-        context.authScope.req.userData,
-        "from auth check"
-      );
+      await getMe({ context });
     } else {
       throw new ApolloError("not authorized");
     }
+  }
+};
+
+export const getMe = async ({ context }) => {
+  const id = context.authScope.req.userSession.userId;
+  if (id) {
+    const res = await USER.findOne({ where: { id: id } });
+    context.authScope.req.userData = res.dataValues;
+    return res.dataValues;
+  } else {
+    throw new ApolloError("not logged in");
   }
 };
