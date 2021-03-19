@@ -9,7 +9,7 @@ import cloudinary from "../../utils/cloudinary.js";
 
 export const getPosts = async ({ args, context }) => {
   const { pageNo } = args.input;
-  let limit = 5;
+  let limit = 100;
   let resObj = {};
   try {
     let data = await POST.findAll({
@@ -45,10 +45,12 @@ export const getPosts = async ({ args, context }) => {
           };
         });
       }
+      let userId = context.authScope.req.userSession.userId;
       return {
         ...item.dataValues,
         postedBy: item.dataValues.user,
-        likes: item.dataValues.likes ? item.dataValues.likes.length : 0,
+        likes: item?.dataValues?.likes ? item.dataValues.likes.length : 0,
+        doesUserLike: item?.dataValues?.likes?.includes(userId),
         comments: comments,
       };
     });
@@ -103,7 +105,7 @@ export const getPostWithId = async ({ args, context }) => {
     );
 
     data = data?.dataValues;
-    
+
     const tempComments = data?.comments;
     let comments = [];
     if (tempComments?.length > 0) {
@@ -154,11 +156,18 @@ export const createPost = async ({ args, context }) => {
   }
 
   try {
-    const res = await POST.create({ ...body });
+    let res = await POST.create({ ...body });
+    console.log(res.dataValues);
+    let { id: postId, mediaLink } = res?.dataValues;
+    let data = {
+      id: postId,
+      mediaLink: mediaLink,
+    };
     if (res) {
       resObj = {
         success: true,
         message: "Post created",
+        data: data,
       };
     } else {
       resObj = {
@@ -217,6 +226,7 @@ export const likePost = async ({ args, context }) => {
       error: "operation failed",
     };
   }
+  console.log(resObj)
   return resObj;
 };
 

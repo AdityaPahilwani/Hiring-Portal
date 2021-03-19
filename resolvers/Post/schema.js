@@ -7,6 +7,7 @@ const postDefs = gql`
     postType: String
     description: String
     mediaLink: String
+    doesUserLike: Boolean
     likes: Int
     comments: [commentWithUser]
   }
@@ -26,7 +27,18 @@ const postDefs = gql`
     error: String
     data: [post]
   }
-  
+
+  type createPostDataReturnType {
+    id: ID
+    mediaLink: String
+  }
+  type createPostReturnType {
+    success: Boolean
+    message: String
+    error: String
+    data: createPostDataReturnType
+  }
+
   type postWithIdReturnType {
     success: Boolean
     message: String
@@ -46,7 +58,7 @@ const postDefs = gql`
   }
 
   extend type Mutation {
-    createPost(input: createPostInput): postReturnType
+    createPost(input: createPostInput): createPostReturnType
     likePost(input: reactToPostInput): postReturnType
     unLikePost(input: reactToPostInput): postReturnType
   }

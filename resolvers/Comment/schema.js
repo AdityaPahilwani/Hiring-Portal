@@ -5,6 +5,10 @@ const commentDefs = gql`
     success: Boolean
     message: String
     error: String
+    data: returnCreatedCommentData
+  }
+  type returnCreatedCommentData {
+    id: ID!
   }
 
   type commentWithUser {

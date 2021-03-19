@@ -2,6 +2,7 @@ import USER from "../../Model/user.js";
 import SQL from "sequelize";
 
 const { Sequelize, Model, DataTypes } = SQL;
+import cloudinary from "../../utils/cloudinary.js";
 import bcrypt from "bcryptjs";
 export const createUser = async ({ args, context }) => {
   const { name, email, gender, bio, password } = args.input;
@@ -87,6 +88,12 @@ export const updateUser = async ({ args, context }) => {
     }
   }
 
+  if (body["profilePic"]) {
+    const mediaRes = await cloudinary.uploader.upload(body["profilePic"]);
+    body["profilePic"] = mediaRes.url;
+  } else {
+    body["profilePic"] = false;
+  }
   try {
     const ID = context.authScope.req.userSession.userId;
     const res = await USER.update(body, { where: { id: ID }, returning: true });

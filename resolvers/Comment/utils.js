@@ -18,10 +18,15 @@ export const createComment = async ({ args, context }) => {
   body["userId"] = context.authScope.req.userSession.userId;
   try {
     let res = await COMMENT.create(body);
-    
-    resObj = { success: true, message: "comment posted" };
+    let { id, comment } = res?.dataValues;
+    let data = { id };
+    resObj = {
+      success: true,
+      message: "comment posted",
+      data: data,
+    };
   } catch (err) {
-    console.log(err)
+    console.log(err);
     resObj = { error: "Custom error", success: false, message: "error" };
   }
   return resObj;
@@ -35,10 +40,10 @@ export const getComments = async ({ args, context }) => {
   try {
     let data = await COMMENT.findAll({
       where: { postId: postId },
-      offset:  pageNo * limit,
+      offset: pageNo * limit,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["comment",'id'],
+      attributes: ["comment", "id"],
       include: [
         {
           ...basicUserDetails,
@@ -49,7 +54,7 @@ export const getComments = async ({ args, context }) => {
     data = data.map((item, index) => {
       return { ...item.dataValues, userData: item.dataValues.user };
     });
-    
+
     resObj = {
       success: true,
       message: "Fetch successful",

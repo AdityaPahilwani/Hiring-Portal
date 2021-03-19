@@ -5,6 +5,7 @@ const { Sequelize, Model, DataTypes } = SQL;
 const { ApolloError } = pkg;
 export const isAuthorized = async ({ context }) => {
   if (!context.authScope.req.userSession.userId) {
+    console.log(context.authScope.req.headers.authorization, "from auth made");
     if (context.authScope.req.headers.authorization) {
       const id = context.authScope.req.headers.authorization;
       context.authScope.req.userSession.userId = id;
