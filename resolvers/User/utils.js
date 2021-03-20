@@ -91,8 +91,10 @@ export const updateUser = async ({ args, context }) => {
   if (body["profilePic"]) {
     const mediaRes = await cloudinary.uploader.upload(body["profilePic"]);
     body["profilePic"] = mediaRes.url;
-  } else {
-    body["profilePic"] = false;
+  }
+  if (body["password"]) {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    body["password"] = hashedPassword;
   }
   try {
     const ID = context.authScope.req.userSession.userId;
