@@ -7,14 +7,19 @@ import {
   acceptFollowRequest,
   declineFollowRequest,
   unFollowUser,
+  getUserWithId,
 } from "./utils.js";
-import { isAuthorized, getMe } from "../Middleware/checkAuth.js";
+import { isAuthorized,getLoggedInUser } from "../Middleware/checkAuth.js";
 const userResolver = {
   Query: {
     getMe: async (parent, args, context, info) => {
-      await isAuthorized({ context });
-      const data = await getMe({ context });
+      const data = await getLoggedInUser({ context });
       return data;
+    },
+    getUser: async (parent, args, context, info) => {
+      await isAuthorized({ context });
+      const res = await getUserWithId({ args, context });
+      return res;
     },
   },
   Mutation: {

@@ -4,25 +4,38 @@ import SQL from "sequelize";
 const { Sequelize, Model, DataTypes } = SQL;
 const { ApolloError } = pkg;
 export const isAuthorized = async ({ context }) => {
-  if (!context.authScope.req.userSession.userId) {
-    console.log(context.authScope.req.headers.authorization, "from auth made");
-    if (context.authScope.req.headers.authorization) {
+  try {
+    let loggedInUserId = context.authScope.req.userSession.userId;
+    if (!loggedInUserId) {
+      console.log(
+        context.authScope.req.headers.authorization,
+        "from auth made"
+      );
       const id = context.authScope.req.headers.authorization;
-      context.authScope.req.userSession.userId = id;
-      await getMe({ context });
-    } else {
-      throw new ApolloError("not authorized");
+      if (id) {
+        context.authScope.req.userSession.userId = id;
+      } else {
+        throw new ApolloError("not authorized");
+      }
     }
+  } catch (err) {
+    console.log("error from auth check ", err);
   }
 };
 
-export const getMe = async ({ context }) => {
-  const id = context.authScope.req.userSession.userId;
-  if (id) {
-    const res = await USER.findOne({ where: { id: id } });
-    context.authScope.req.userData = res.dataValues;
-    return res.dataValues;
-  } else {
-    throw new ApolloError("not logged in");
+export const getLoggedInUser = async ({ context }) => {
+  try {
+    let loggedInUserId = context.authScope.req.userSession.userId;
+    let userData = {};
+    if (loggedInUserId) {
+      const res = await USER.findOne({ where: { id: loggedInUserId } });
+      userData = res.dataValues;
+      delete userData.password;
+      return userData;
+    } else {
+      throw new ApolloError("not authorized");
+    }
+  } catch (err) {
+    console.log("error from auth check ", err);
   }
 };

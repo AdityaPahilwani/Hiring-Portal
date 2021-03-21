@@ -3,7 +3,9 @@ import SQL from "sequelize";
 
 const { Sequelize, Model, DataTypes } = SQL;
 import cloudinary from "../../utils/cloudinary.js";
+import { getLoggedInUser } from "../Middleware/checkAuth.js";
 import bcrypt from "bcryptjs";
+
 export const createUser = async ({ args, context }) => {
   const { name, email, gender, bio, password } = args.input;
   let resObj = {};
@@ -78,6 +80,61 @@ export const signIn = async ({ args, context }) => {
   return resObj;
 };
 
+export const getUserWithId = async ({ args, context }) => {
+  const { userId } = args.input;
+  let resObj = {};
+  let loggedInUserDetails = await getLoggedInUser({ context });
+  let data = {};
+  let userRelation = {
+    isAdmin: false,
+    isFollowing: false,
+    isFollower: false,
+    hasSentRequest: false,
+    hasReceivedRequest: false,
+  };
+  console.log(loggedInUserDetails);
+  try {
+    const loggedInId = context.authScope.req.userSession.userId;
+    if (loggedInId === userId) {
+      userRelation.isAdmin = true;
+      data = loggedInUserDetails;
+    } else {
+      const res = await USER.findOne({ where: { id: userId } });
+      data = res.dataValues;
+      if (loggedInUserDetails?.requestedTo?.includes(userId)) {
+        userRelation.hasSentRequest = true;
+      }
+      if (loggedInUserDetails?.requestedBy?.includes(userId)) {
+        userRelation.hasReceivedRequest = true;
+      }
+      if (loggedInUserDetails?.followers?.includes(userId)) {
+        userRelation.isFollower = true;
+      }
+      if (loggedInUserDetails?.following?.includes(userId)) {
+        userRelation.isFollowing = true;
+      }
+    }
+
+    data.totalFollowers = data?.followers?.length || 0;
+    data.totalFollowing = data?.following?.length || 0;
+    delete data.password;
+    delete data.requestedTo;
+    delete data.requestedBy;
+    delete data.followers;
+    delete data.following;
+    console.log(data, " from get User with id");
+    resObj = {
+      success: true,
+      message: "Fetch successful",
+      userRelation: userRelation,
+      data: data,
+    };
+  } catch (err) {
+    resObj = { error: "Custom error", success: false, message: "error" };
+    console.log(err);
+  }
+  return resObj;
+};
 export const updateUser = async ({ args, context }) => {
   let body = {},
     resObj = {};
@@ -93,7 +150,7 @@ export const updateUser = async ({ args, context }) => {
     body["profilePic"] = mediaRes.url;
   }
   if (body["password"]) {
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(body["password"], 12);
     body["password"] = hashedPassword;
   }
   try {
@@ -174,16 +231,16 @@ export const revokeToFollowUserRequest = async ({ args, context }) => {
   let resObj = {};
   try {
     let adminBody = {
-      requestedTo: Sequelize.fn(
+      requestedBy: Sequelize.fn(
         "array_remove",
-        Sequelize.col(`requestedTo`),
+        Sequelize.col(`requestedBy`),
         requestedTo
       ),
     };
     let updateRequestedBody = {
-      requestedBy: Sequelize.fn(
+      requestedTo: Sequelize.fn(
         "array_remove",
-        Sequelize.col(`requestedBy`),
+        Sequelize.col(`requestedTo`),
         ID
       ),
     };
@@ -211,8 +268,9 @@ export const acceptFollowRequest = async ({ args, context }) => {
   let resObj = {};
 
   try {
-    const getUser = await USER.findOne({ where: { id: ID } });
-    if (getUser?.dataValues?.requestedTo?.includes(requestedTo)) {
+    const getUser = await USER.findOne({ where: { id: requestedTo } });
+    console.log(getUser?.dataValues?.requestedTo?.includes(ID));
+    if (getUser?.dataValues?.requestedTo?.includes(ID)) {
       let adminBody = {
         following: Sequelize.fn(
           "array_append",
@@ -235,6 +293,7 @@ export const acceptFollowRequest = async ({ args, context }) => {
         args,
         context,
       });
+      console.log(deleteFromRequestObj, "trial");
       resObj = {
         success: true,
         message: "Request accepted",
@@ -243,9 +302,18 @@ export const acceptFollowRequest = async ({ args, context }) => {
         resObj = deleteFromRequestObj;
       }
     }
+    else{
+      resObj = {
+        success: false,
+        message: "not recived request by the user",
+        error: "not recived request by the user"
+      };
+    }
   } catch (err) {
+    console.log("from accept request", err);
     resObj = { error: "Custom error", success: false, message: "error" };
   }
+  console.log(resObj);
   return resObj;
 };
 
