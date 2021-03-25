@@ -13,6 +13,7 @@ import { isAuthorized,getLoggedInUser } from "../Middleware/checkAuth.js";
 const userResolver = {
   Query: {
     getMe: async (parent, args, context, info) => {
+      await isAuthorized({ context });
       const data = await getLoggedInUser({ context });
       return data;
     },

@@ -10,7 +10,7 @@ export const createUser = async ({ args, context }) => {
   const { name, email, gender, bio, password } = args.input;
   let resObj = {};
   let profilePic;
-  console.log(args.input);
+
   if (gender === "Male") {
     profilePic =
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdDIZrF6XF_2t2UMsPyfkuwZfvagwvN-seTwA0LMHhlLAy7ykG56D7ALt54c-q9t3mMyc&usqp=CAU";
@@ -56,14 +56,22 @@ export const signIn = async ({ args, context }) => {
   try {
     const res = await USER.findOne({ where: { email } });
     const checkPass = await bcrypt.compare(password, res.dataValues.password);
+    // const { request } = context;
+    // const resTemp = context.authScope.res.cookie("id", res.dataValues.id, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    // });
+    // console.log(context.authScope.req.session);
     context.authScope.req.userData = res.dataValues;
     context.authScope.req.userSession.userId = res.dataValues.id;
+    console.log(context.authScope.req.userSession)
     console.log("cookie set", context.authScope.req.userSession.userId);
     if (checkPass) {
       resObj = {
         success: true,
         message: "Success login",
-        cookie: context.authScope.req.userSession.userId,
+        cookie: res.dataValues.id,
         data: res.dataValues,
       };
     } else {
@@ -77,6 +85,7 @@ export const signIn = async ({ args, context }) => {
     resObj = { error: "Custom error", success: false, message: "error" };
     console.log(err);
   }
+  console.log(resObj);
   return resObj;
 };
 
@@ -101,6 +110,9 @@ export const getUserWithId = async ({ args, context }) => {
     } else {
       const res = await USER.findOne({ where: { id: userId } });
       data = res.dataValues;
+      if (!data) {
+        throw new Error("Not found");
+      }
       if (loggedInUserDetails?.requestedTo?.includes(userId)) {
         userRelation.hasSentRequest = true;
       }
@@ -122,7 +134,7 @@ export const getUserWithId = async ({ args, context }) => {
     delete data.requestedBy;
     delete data.followers;
     delete data.following;
-    console.log(data, " from get User with id");
+
     resObj = {
       success: true,
       message: "Fetch successful",
@@ -130,7 +142,7 @@ export const getUserWithId = async ({ args, context }) => {
       data: data,
     };
   } catch (err) {
-    resObj = { error: "Custom error", success: false, message: "error" };
+    resObj = { error: "Not found", success: false, message: "error" };
     console.log(err);
   }
   return resObj;
@@ -153,6 +165,7 @@ export const updateUser = async ({ args, context }) => {
     const hashedPassword = await bcrypt.hash(body["password"], 12);
     body["password"] = hashedPassword;
   }
+
   try {
     const ID = context.authScope.req.userSession.userId;
     const res = await USER.update(body, { where: { id: ID }, returning: true });
@@ -222,6 +235,7 @@ export const requestToFollowUser = async ({ args, context }) => {
     console.log(err);
     resObj = { error: "Custom error", success: false, message: "error" };
   }
+  console.log("TEMP LOG", resObj, "TEMP LOG");
   return resObj;
 };
 
@@ -269,7 +283,7 @@ export const acceptFollowRequest = async ({ args, context }) => {
 
   try {
     const getUser = await USER.findOne({ where: { id: requestedTo } });
-    console.log(getUser?.dataValues?.requestedTo?.includes(ID));
+
     if (getUser?.dataValues?.requestedTo?.includes(ID)) {
       let adminBody = {
         following: Sequelize.fn(
@@ -301,12 +315,11 @@ export const acceptFollowRequest = async ({ args, context }) => {
       if (deleteFromRequestObj.error) {
         resObj = deleteFromRequestObj;
       }
-    }
-    else{
+    } else {
       resObj = {
         success: false,
         message: "not recived request by the user",
-        error: "not recived request by the user"
+        error: "not recived request by the user",
       };
     }
   } catch (err) {

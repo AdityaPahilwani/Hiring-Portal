@@ -55,7 +55,7 @@ const typeDefs = gql`
   }
 
   input userFollowerInputs {
-    requestedTo: String!
+    requestedTo: ID!
   }
 
   type authReturnType {

@@ -116,11 +116,11 @@ export const getPostWithId = async ({ args, context }) => {
         };
       });
     }
-    console.log(data.likes);
+
     data.postedBy = data.user;
     data.comments = comments;
     data.likes = data.likes ? data.likes.length : 0;
-    console.log(data);
+
     resObj = {
       success: true,
       message: "Fetch successful",
@@ -157,7 +157,7 @@ export const createPost = async ({ args, context }) => {
 
   try {
     let res = await POST.create({ ...body });
-    console.log(res.dataValues);
+;
     let { id: postId, mediaLink } = res?.dataValues;
     let data = {
       id: postId,
@@ -272,5 +272,6 @@ export const unLikePost = async ({ args, context }) => {
       error: "operation failed",
     };
   }
+  console.log(resObj)
   return resObj;
 };

@@ -19,6 +19,8 @@ const app = express();
 const PORT = 4000;
 app.use(
   session({
+    saveUninitialized: false,
+    resave: false,
     cookieName: "userSession",
     secret: "cat",
     duration: 28 * 24 * 60 * 60 * 1000, // 28 Days
@@ -39,13 +41,13 @@ const server = new ApolloServer({
 });
 
 POST.belongsTo(USER, { sourceKey: "id", foreignKey: "postedBy" });
-POST.hasMany(COMMENT, { sourceKey: 'id', targetKey: 'parentId' });
+POST.hasMany(COMMENT, { sourceKey: "id", targetKey: "parentId" });
 COMMENT.belongsTo(USER, { sourceKey: "id", foreignKey: "userId" });
 
 sequelize
   .sync()
   .then((result) => {
-    console.log("hwllloooo");
+    console.log("hellloooo");
   })
   .catch((err) => {
     console.log(err);

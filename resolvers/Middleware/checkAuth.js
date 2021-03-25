@@ -7,13 +7,12 @@ export const isAuthorized = async ({ context }) => {
   try {
     let loggedInUserId = context.authScope.req.userSession.userId;
     if (!loggedInUserId) {
-      console.log(
-        context.authScope.req.headers.authorization,
-        "from auth made"
-      );
+      
       const id = context.authScope.req.headers.authorization;
+      console.log("PASSEDDDD",id)
       if (id) {
         context.authScope.req.userSession.userId = id;
+        console.log("PASSES")
       } else {
         throw new ApolloError("not authorized");
       }
