@@ -30,11 +30,11 @@ export const createUser = async ({ args, context }) => {
         profilePic: profilePic,
         password: hashedPassword,
       });
-      context.authScope.req.userSession.userId = res.dataValues.id;
+      context.req.session.userId = res.dataValues.id;
       resObj = {
         success: true,
         message: "user created",
-        cookie: context.authScope.req.userSession.userId,
+        cookie: context.req.session.userId,
       };
     } else {
       resObj = {
@@ -62,16 +62,18 @@ export const signIn = async ({ args, context }) => {
     //   secure: process.env.NODE_ENV === "production",
     //   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     // });
-    // console.log(context.authScope.req.session);
-    context.authScope.req.userData = res.dataValues;
-    context.authScope.req.userSession.userId = res.dataValues.id;
-    console.log(context.authScope.req.userSession)
-    console.log("cookie set", context.authScope.req.userSession.userId);
+    // console.log(context.req.session);
+    // context.req.userData = res.dataValues;
+    console.log(context.req.session)
+    context.req.session.userId = res.dataValues.id;
+    console.log(context.req.session)
+    // console.log(context.req)
+    console.log("cookie set", "");
     if (checkPass) {
       resObj = {
         success: true,
         message: "Success login",
-        cookie: res.dataValues.id,
+        cookie: "",
         data: res.dataValues,
       };
     } else {
@@ -103,7 +105,7 @@ export const getUserWithId = async ({ args, context }) => {
   };
   console.log(loggedInUserDetails);
   try {
-    const loggedInId = context.authScope.req.userSession.userId;
+    const loggedInId = context.req.session.userId;
     if (loggedInId === userId) {
       userRelation.isAdmin = true;
       data = loggedInUserDetails;
@@ -167,13 +169,13 @@ export const updateUser = async ({ args, context }) => {
   }
 
   try {
-    const ID = context.authScope.req.userSession.userId;
+    const ID = context.req.session.userId;
     const res = await USER.update(body, { where: { id: ID }, returning: true });
     if (res) {
       resObj = {
         success: true,
         message: "user updated",
-        cookie: context.authScope.req.userSession.userId,
+        cookie: context.req.session.userId,
         data: res.dataValues,
       };
     } else {
@@ -192,7 +194,7 @@ export const updateUser = async ({ args, context }) => {
 
 export const requestToFollowUser = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
-  const ID = context.authScope.req.userSession.userId;
+  const ID = context.req.session.userId;
 
   let resObj = {};
   try {
@@ -241,7 +243,7 @@ export const requestToFollowUser = async ({ args, context }) => {
 
 export const revokeToFollowUserRequest = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
-  const ID = context.authScope.req.userSession.userId;
+  const ID = context.req.session.userId;
   let resObj = {};
   try {
     let adminBody = {
@@ -278,7 +280,7 @@ export const revokeToFollowUserRequest = async ({ args, context }) => {
 
 export const acceptFollowRequest = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
-  const ID = context.authScope.req.userSession.userId;
+  const ID = context.req.session.userId;
   let resObj = {};
 
   try {
@@ -342,7 +344,7 @@ export const declineFollowRequest = async ({ args, context }) => {
 };
 export const unFollowUser = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
-  const ID = context.authScope.req.userSession.userId;
+  const ID = context.req.session.userId;
   let resObj = {};
   try {
     let adminBody = {

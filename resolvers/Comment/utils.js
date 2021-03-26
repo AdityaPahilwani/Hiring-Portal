@@ -15,7 +15,7 @@ export const createComment = async ({ args, context }) => {
       body[key] = value;
     }
   }
-  body["userId"] = context.authScope.req.userSession.userId;
+  body["userId"] = context.req.session.userId;
   try {
     let res = await COMMENT.create(body);
     let { id, comment } = res?.dataValues;

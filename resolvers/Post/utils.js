@@ -45,7 +45,7 @@ export const getPosts = async ({ args, context }) => {
           };
         });
       }
-      let userId = context.authScope.req.userSession.userId;
+      let userId = context.req.session.userId;
       return {
         ...item.dataValues,
         postedBy: item.dataValues.user,
@@ -146,8 +146,8 @@ export const createPost = async ({ args, context }) => {
       body[key] = value;
     }
   }
-  console.log(context.authScope.req.userSession.userId);
-  body["postedBy"] = context.authScope.req.userSession.userId;
+  console.log(context.req.session.userId);
+  body["postedBy"] = context.req.session.userId;
   if (body["mediaLink"]) {
     const mediaRes = await cloudinary.uploader.upload(body["mediaLink"]);
     body["mediaLink"] = mediaRes.url;
@@ -187,7 +187,7 @@ export const createPost = async ({ args, context }) => {
 export const likePost = async ({ args, context }) => {
   let { postId } = args.input;
   let resObj = {};
-  const userId = context.authScope.req.userSession.userId;
+  const userId = context.req.session.userId;
 
   let body = {
     likes: Sequelize.fn("array_append", Sequelize.col(`likes`), userId),
@@ -233,7 +233,7 @@ export const likePost = async ({ args, context }) => {
 export const unLikePost = async ({ args, context }) => {
   let { postId } = args.input;
   let resObj = {};
-  const userId = context.authScope.req.userSession.userId;
+  const userId = context.req.session.userId;
 
   let body = {
     likes: Sequelize.fn("array_remove", Sequelize.col(`likes`), userId),

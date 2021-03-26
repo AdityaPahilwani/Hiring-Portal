@@ -1,7 +1,7 @@
 import express from "express";
 import http from "http";
 import apollo from "apollo-server-express";
-import session from "client-sessions";
+import session from "express-session";
 import userDefs from "./resolvers/User/schema.js";
 import userResolver from "./resolvers/User/index.js";
 import postResolver from "./resolvers/Post/index.js";
@@ -12,11 +12,16 @@ import sequelize from "./utils/database.js";
 import POST from "./Model/post.js";
 import COMMENT from "./Model/comment.js";
 import USER from "./Model/user.js";
+import cors from "cors";
 const { ApolloServer, gql } = apollo;
 
 const app = express();
 
 const PORT = 4000;
+app.set("trust proxy", 1);
+
+const corsOptions = { credentials: true, origin: "http://localhost:3000" };
+
 app.use(
   session({
     saveUninitialized: false,
@@ -35,8 +40,9 @@ app.use(
 const server = new ApolloServer({
   typeDefs: [userDefs, postDefs, commentDefs],
   resolvers: [userResolver, postResolver, commentResolver],
-  context: (req) => ({
-    authScope: req,
+  context: ({ req, res }) => ({
+    req,
+    res,
   }),
 });
 
@@ -53,7 +59,7 @@ sequelize
     console.log(err);
   });
 
-server.applyMiddleware({ app });
+server.applyMiddleware({ app, cors: corsOptions });
 
 app.listen({ port: 4000 }, () =>
   console.log(`Now browse to http://localhost:${PORT}` + server.graphqlPath)
