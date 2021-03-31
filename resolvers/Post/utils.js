@@ -4,18 +4,26 @@ import COMMENT from "../../Model/comment.js";
 import { basicUserDetails } from "../Constants/defaultModelData.js";
 import { skipTopComments } from "../Constants/randomConstant.js";
 import SQL from "sequelize";
-const { Sequelize, Model, DataTypes } = SQL;
+const { Sequelize, Model, DataTypes, Op } = SQL;
 import cloudinary from "../../utils/cloudinary.js";
+import { getLoggedInUser } from "../Middleware/checkAuth.js";
 
 export const getPosts = async ({ args, context }) => {
   const { pageNo } = args.input;
   let limit = 100;
   let resObj = {};
+
   try {
+    let { following, id } = await getLoggedInUser({ args, context });
+    following = following || [];
+    console.log(following, id);
     let data = await POST.findAll({
       offset: pageNo * limit,
       limit: limit,
       order: [["createdAt", "DESC"]],
+      where: {
+        postedBy: { [Op.in]: following },
+      },
       include: [
         {
           ...basicUserDetails,
@@ -157,7 +165,6 @@ export const createPost = async ({ args, context }) => {
 
   try {
     let res = await POST.create({ ...body });
-;
     let { id: postId, mediaLink } = res?.dataValues;
     let data = {
       id: postId,
@@ -180,7 +187,7 @@ export const createPost = async ({ args, context }) => {
     resObj = { error: "Custom error", success: false, message: "error" };
     console.log("error", err);
   }
-  console.log(resObj);
+
   return resObj;
 };
 
@@ -226,7 +233,7 @@ export const likePost = async ({ args, context }) => {
       error: "operation failed",
     };
   }
-  console.log(resObj)
+
   return resObj;
 };
 
@@ -272,6 +279,6 @@ export const unLikePost = async ({ args, context }) => {
       error: "operation failed",
     };
   }
-  console.log(resObj)
+
   return resObj;
 };

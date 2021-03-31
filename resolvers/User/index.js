@@ -8,6 +8,8 @@ import {
   declineFollowRequest,
   unFollowUser,
   getUserWithId,
+  searchUsers,
+  getRequestedUsers
 } from "./utils.js";
 import { isAuthorized,getLoggedInUser } from "../Middleware/checkAuth.js";
 const userResolver = {
@@ -20,6 +22,16 @@ const userResolver = {
     getUser: async (parent, args, context, info) => {
       await isAuthorized({ context });
       const res = await getUserWithId({ args, context });
+      return res;
+    },
+    searchUsers: async (parent, args, context, info) => {
+      await isAuthorized({ context });
+      const res = await searchUsers({ args, context });
+      return res;
+    },
+    getRequestedUsers: async (parent, args, context, info) => {
+      await isAuthorized({ context });
+      const res = await getRequestedUsers({ args, context });
       return res;
     },
   },

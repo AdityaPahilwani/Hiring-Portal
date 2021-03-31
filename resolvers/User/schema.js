@@ -85,13 +85,24 @@ const typeDefs = gql`
     userRelation: userRelation
     data: gistFullUserDetails
   }
-
+  type searchUsersReturnType{
+    success: Boolean
+    message: String
+    error: String
+    data: [basicUserDetails]
+  }
+  input searchUsersInput{
+    search: String
+    skills: [String]
+  }
   input getUserInputId {
     userId: ID!
   }
   type Query {
     getMe: fullUserDetails
     getUser(input: getUserInputId): getUserWithId
+    searchUsers(input: searchUsersInput):searchUsersReturnType
+    getRequestedUsers:searchUsersReturnType
   }
 
   type Mutation {

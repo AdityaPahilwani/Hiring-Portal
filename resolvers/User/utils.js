@@ -1,7 +1,7 @@
 import USER from "../../Model/user.js";
 import SQL from "sequelize";
 
-const { Sequelize, Model, DataTypes } = SQL;
+const { Sequelize, Model, DataTypes, Op } = SQL;
 import cloudinary from "../../utils/cloudinary.js";
 import { getLoggedInUser } from "../Middleware/checkAuth.js";
 import bcrypt from "bcryptjs";
@@ -56,19 +56,7 @@ export const signIn = async ({ args, context }) => {
   try {
     const res = await USER.findOne({ where: { email } });
     const checkPass = await bcrypt.compare(password, res.dataValues.password);
-    // const { request } = context;
-    // const resTemp = context.authScope.res.cookie("id", res.dataValues.id, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    // });
-    // console.log(context.req.session);
-    // context.req.userData = res.dataValues;
-    console.log(context.req.session)
     context.req.session.userId = res.dataValues.id;
-    console.log(context.req.session)
-    // console.log(context.req)
-    console.log("cookie set", "");
     if (checkPass) {
       resObj = {
         success: true,
@@ -87,7 +75,7 @@ export const signIn = async ({ args, context }) => {
     resObj = { error: "Custom error", success: false, message: "error" };
     console.log(err);
   }
-  console.log(resObj);
+
   return resObj;
 };
 
@@ -103,7 +91,6 @@ export const getUserWithId = async ({ args, context }) => {
     hasSentRequest: false,
     hasReceivedRequest: false,
   };
-  console.log(loggedInUserDetails);
   try {
     const loggedInId = context.req.session.userId;
     if (loggedInId === userId) {
@@ -146,6 +133,62 @@ export const getUserWithId = async ({ args, context }) => {
   } catch (err) {
     resObj = { error: "Not found", success: false, message: "error" };
     console.log(err);
+  }
+  return resObj;
+};
+
+export const searchUsers = async ({ args, context }) => {
+  let { search, skills } = args.input;
+  let resObj = {};
+  let searchObj = {};
+  try {
+    const ID = context.req.session.userId;
+    if (search) {
+      searchObj.name = { [Op.iLike]: `%${search}%` };
+    }
+    if (skills) {
+      searchObj.skills = { [Op.overlap]: skills };
+    }
+
+    let res = await USER.findAll({
+      where: { id: { [Op.ne]: ID }, ...searchObj },
+    });
+    let data = res?.map((item, index) => {
+      return { ...item.dataValues };
+    });
+
+    resObj = {
+      success: true,
+      message: "Fetch successful",
+      data: data,
+    };
+  } catch (err) {
+    console.log(err);
+    resObj = { error: "Not found", success: false, message: "error" };
+  }
+  return resObj;
+};
+
+export const getRequestedUsers = async ({ args, context }) => {
+  let { requestedBy } = await getLoggedInUser({ args, context });
+  requestedBy = requestedBy || [];
+  let resObj = {};
+  try {
+    let res = await USER.findAll({
+      where: { id: { [Op.in]: requestedBy } },
+    });
+    let data = res?.map((item, index) => {
+      return { ...item.dataValues };
+    });
+
+    resObj = {
+      success: true,
+      message: "Fetch successful",
+      data: data,
+    };
+  } catch (err) {
+    console.log(err);
+    resObj = { error: "Not found", success: false, message: "error" };
   }
   return resObj;
 };
@@ -193,19 +236,34 @@ export const updateUser = async ({ args, context }) => {
 };
 
 export const requestToFollowUser = async ({ args, context }) => {
-  const { id, requestedTo } = args.input;
+  const { requestedTo } = args.input;
   const ID = context.req.session.userId;
-
   let resObj = {};
-  try {
-    const getUser = await USER.findOne({ where: { id: ID } });
-    if (getUser?.dataValues?.requestedTo?.includes(requestedTo)) {
-      resObj = {
-        error: "Request already sent",
-        success: false,
-        message: "operation failed",
-      };
-    } else {
+  if (requestedTo !== ID) {
+    try {
+      const getUser = await getLoggedInUser({ args, context });
+      console.log(getUser);
+      if (getUser.requestedTo?.includes(requestedTo)) {
+        resObj = {
+          error: "Request already sent",
+          success: false,
+          message: "operation failed",
+        };
+        return resObj;
+      }
+      console.log(
+        getUser.following?.includes(requestedTo),
+        getUser?.dataValues
+      );
+      if (getUser.following?.includes(requestedTo)) {
+        resObj = {
+          error: "You are already following user",
+          success: false,
+          message: "operation failed",
+        };
+        return resObj;
+      }
+
       let adminBody = {
         requestedTo: Sequelize.fn(
           "array_append",
@@ -232,16 +290,112 @@ export const requestToFollowUser = async ({ args, context }) => {
         success: true,
         message: "Request sent",
       };
+    } catch (err) {
+      console.log(err);
+      resObj = { error: "Custom error", success: false, message: "error" };
     }
-  } catch (err) {
-    console.log(err);
-    resObj = { error: "Custom error", success: false, message: "error" };
+  } else {
+    resObj = {
+      error: "Admin can't send request to itself",
+      success: false,
+      message: "Admin can't send request to itself",
+    };
   }
   console.log("TEMP LOG", resObj, "TEMP LOG");
   return resObj;
 };
 
 export const revokeToFollowUserRequest = async ({ args, context }) => {
+  const { id, requestedTo } = args.input;
+  const ID = context.req.session.userId;
+  let resObj = {};
+  try {
+    let adminBody = {
+      requestedTo: Sequelize.fn(
+        "array_remove",
+        Sequelize.col(`requestedTo`),
+        requestedTo
+      ),
+    };
+    let updateRequestedBody = {
+      requestedBy: Sequelize.fn(
+        "array_remove",
+        Sequelize.col(`requestedBy`),
+        ID
+      ),
+    };
+    await USER.update(adminBody, {
+      where: { id: ID },
+      returning: true,
+    });
+    const updateRequestedUser = await USER.update(updateRequestedBody, {
+      where: { id: requestedTo },
+      returning: true,
+    });
+    resObj = {
+      success: true,
+      message: "Request revoked",
+    };
+  } catch (err) {
+    resObj = { error: "Custom error", success: false, message: "error" };
+  }
+  return resObj;
+};
+
+export const acceptFollowRequest = async ({ args, context }) => {
+  const { id, requestedTo } = args.input;
+  const ID = context.req.session.userId;
+  let resObj = {};
+
+  try {
+    const getUser = await getLoggedInUser({ args, context });
+    if (getUser.requestedBy?.includes(requestedTo)) {
+      let adminBody = {
+        followers: Sequelize.fn(
+          "array_append",
+          Sequelize.col(`followers`),
+          requestedTo
+        ),
+      };
+      let updateRequestedBody = {
+        following: Sequelize.fn("array_append", Sequelize.col(`following`), ID),
+      };
+      await USER.update(adminBody, {
+        where: { id: ID },
+        returning: true,
+      });
+      const updateRequestedUser = await USER.update(updateRequestedBody, {
+        where: { id: requestedTo },
+        returning: true,
+      });
+      const deleteFromRequestObj = await declineFollowRequest({
+        args,
+        context,
+      });
+      console.log(deleteFromRequestObj, "trial");
+      resObj = {
+        success: true,
+        message: "Request accepted",
+      };
+      if (deleteFromRequestObj.error) {
+        resObj = deleteFromRequestObj;
+      }
+    } else {
+      resObj = {
+        success: false,
+        message: "not recived request by the user",
+        error: "not recived request by the user",
+      };
+    }
+  } catch (err) {
+    console.log("from accept request", err);
+    resObj = { error: "Custom error", success: false, message: "error" };
+  }
+
+  return resObj;
+};
+
+export const declineFollowRequest = async ({ args, context }) => {
   const { id, requestedTo } = args.input;
   const ID = context.req.session.userId;
   let resObj = {};
@@ -270,75 +424,10 @@ export const revokeToFollowUserRequest = async ({ args, context }) => {
     });
     resObj = {
       success: true,
-      message: "Request revoked",
+      message: "Request declined",
     };
   } catch (err) {
     resObj = { error: "Custom error", success: false, message: "error" };
-  }
-  return resObj;
-};
-
-export const acceptFollowRequest = async ({ args, context }) => {
-  const { id, requestedTo } = args.input;
-  const ID = context.req.session.userId;
-  let resObj = {};
-
-  try {
-    const getUser = await USER.findOne({ where: { id: requestedTo } });
-
-    if (getUser?.dataValues?.requestedTo?.includes(ID)) {
-      let adminBody = {
-        following: Sequelize.fn(
-          "array_append",
-          Sequelize.col(`following`),
-          requestedTo
-        ),
-      };
-      let updateRequestedBody = {
-        followers: Sequelize.fn("array_append", Sequelize.col(`followers`), ID),
-      };
-      await USER.update(adminBody, {
-        where: { id: ID },
-        returning: true,
-      });
-      const updateRequestedUser = await USER.update(updateRequestedBody, {
-        where: { id: requestedTo },
-        returning: true,
-      });
-      const deleteFromRequestObj = await revokeToFollowUserRequest({
-        args,
-        context,
-      });
-      console.log(deleteFromRequestObj, "trial");
-      resObj = {
-        success: true,
-        message: "Request accepted",
-      };
-      if (deleteFromRequestObj.error) {
-        resObj = deleteFromRequestObj;
-      }
-    } else {
-      resObj = {
-        success: false,
-        message: "not recived request by the user",
-        error: "not recived request by the user",
-      };
-    }
-  } catch (err) {
-    console.log("from accept request", err);
-    resObj = { error: "Custom error", success: false, message: "error" };
-  }
-  console.log(resObj);
-  return resObj;
-};
-
-export const declineFollowRequest = async ({ args, context }) => {
-  const resObj = await revokeToFollowUserRequest({
-    args,
-    context,
-  });
-  if (resObj.success) {
-    resObj.message = "Request declined";
   }
   return resObj;
 };
@@ -354,8 +443,16 @@ export const unFollowUser = async ({ args, context }) => {
         requestedTo
       ),
     };
+    let updateRequestedBody = {
+      followers: Sequelize.fn("array_remove", Sequelize.col(`followers`), ID),
+    };
     const res = await USER.update(adminBody, {
       where: { id: ID },
+      returning: true,
+    });
+    console.log(res[1]);
+    const updateRequestedUser = await USER.update(updateRequestedBody, {
+      where: { id: requestedTo },
       returning: true,
     });
     resObj = {
