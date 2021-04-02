@@ -146,7 +146,7 @@ export const searchUsers = async ({ args, context }) => {
     if (search) {
       searchObj.name = { [Op.iLike]: `%${search}%` };
     }
-    if (skills) {
+    if (skills?.length > 0) {
       searchObj.skills = { [Op.overlap]: skills };
     }
 
