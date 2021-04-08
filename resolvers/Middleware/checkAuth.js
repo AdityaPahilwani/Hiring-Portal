@@ -4,7 +4,9 @@ import SQL from "sequelize";
 const { Sequelize, Model, DataTypes } = SQL;
 const { ApolloError } = pkg;
 
-
+/**
+ * It is used to check whether user is logged in or not based on session
+ */
 export const isAuthorized = async ({ context }) => {
   // console.log(context.req, "from Middleware ",context.req.session);
   try {
@@ -17,6 +19,10 @@ export const isAuthorized = async ({ context }) => {
   }
 };
 
+/**
+ * It is used to check whether user is logged in or not based on session
+ * @return logged in user details like id , name , bio , profilePic , follower , following etc
+ */
 export const getLoggedInUser = async ({ context }) => {
   try {
     // console.log(context.req.session, "from getMiddleware ");

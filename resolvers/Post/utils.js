@@ -21,9 +21,9 @@ export const getPosts = async ({ args, context }) => {
       offset: pageNo * limit,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      where: {
-        postedBy: { [Op.in]: following },
-      },
+      // where: {
+      //   postedBy: { [Op.in]: following },
+      // },
       include: [
         {
           ...basicUserDetails,
