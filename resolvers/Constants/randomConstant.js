@@ -1,1 +1,3 @@
-export const skipTopComments=2
+/** @format */
+
+export const skipTopComments = 2;

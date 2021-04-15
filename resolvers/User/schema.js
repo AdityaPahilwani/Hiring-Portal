@@ -1,3 +1,5 @@
+/** @format */
+
 import apollo from "apollo-server-express";
 const { gql } = apollo;
 const typeDefs = gql`
@@ -27,7 +29,7 @@ const typeDefs = gql`
     requestedBy: [basicUserDetails]
   }
 
-  type gistFullUserDetails{
+  type gistFullUserDetails {
     id: ID
     name: String
     email: String
@@ -85,13 +87,14 @@ const typeDefs = gql`
     userRelation: userRelation
     data: gistFullUserDetails
   }
-  type searchUsersReturnType{
+  type searchUsersReturnType {
     success: Boolean
     message: String
     error: String
     data: [basicUserDetails]
   }
-  input searchUsersInput{
+  input searchUsersInput {
+    pageNo:Int!
     search: String
     skills: [String]
   }
@@ -101,12 +104,13 @@ const typeDefs = gql`
   type Query {
     getMe: fullUserDetails
     getUser(input: getUserInputId): getUserWithId
-    searchUsers(input: searchUsersInput):searchUsersReturnType
-    getRequestedUsers:searchUsersReturnType
+    searchUsers(input: searchUsersInput): searchUsersReturnType
+    getRequestedUsers: searchUsersReturnType
   }
 
   type Mutation {
     signIn(input: userDetailsInputs): authReturnType
+    logout: authReturnType
     signUp(input: userDetailsInputs): authReturnType
     updateUser(input: userDetailsInputs): authReturnType
     requestToFollowUser(input: userFollowerInputs): userFollowerReturnType

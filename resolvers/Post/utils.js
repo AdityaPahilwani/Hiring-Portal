@@ -1,3 +1,5 @@
+/** @format */
+
 import POST from "../../Model/post.js";
 import USER from "../../Model/user.js";
 import COMMENT from "../../Model/comment.js";
@@ -10,9 +12,9 @@ import { getLoggedInUser } from "../Middleware/checkAuth.js";
 
 export const getPosts = async ({ args, context }) => {
   const { pageNo } = args.input;
-  let limit = 100;
+  let limit = 10;
   let resObj = {};
-
+  console.log(pageNo);
   try {
     let { following, id } = await getLoggedInUser({ args, context });
     following = following || [];
@@ -42,8 +44,8 @@ export const getPosts = async ({ args, context }) => {
       ],
     });
 
-    data = data.map((item, index) => {
-      const tempComments = item.dataValues.comments;
+    data = data?.map((item, index) => {
+      const tempComments = item?.dataValues.comments;
       let comments = [];
       if (tempComments.length > 0) {
         comments = tempComments.map((commentItem, index) => {
@@ -62,12 +64,20 @@ export const getPosts = async ({ args, context }) => {
         comments: comments,
       };
     });
-
-    resObj = {
-      success: true,
-      message: "Fetch successful",
-      data: data,
-    };
+    console.log(data.length);
+    if (data?.length > 0) {
+      resObj = {
+        success: true,
+        message: "Fetch successful",
+        data: data,
+      };
+    } else {
+      resObj = {
+        success: true,
+        message: "No Data",
+        data: data,
+      };
+    }
   } catch (err) {
     console.log(err);
     resObj = {
@@ -101,7 +111,7 @@ export const getPostWithId = async ({ args, context }) => {
             model: COMMENT,
             attributes: ["id", "comment", "userId"],
             order: [["createdAt", "DESC"]],
-            limit: skipTopComments,
+            // limit: skipTopComments,
             include: [
               {
                 ...basicUserDetails,

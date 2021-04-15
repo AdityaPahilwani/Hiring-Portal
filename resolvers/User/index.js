@@ -1,3 +1,5 @@
+/** @format */
+
 import {
   createUser,
   signIn,
@@ -9,9 +11,10 @@ import {
   unFollowUser,
   getUserWithId,
   searchUsers,
-  getRequestedUsers
+  getRequestedUsers,
+  logout,
 } from "./utils.js";
-import { isAuthorized,getLoggedInUser } from "../Middleware/checkAuth.js";
+import { isAuthorized, getLoggedInUser } from "../Middleware/checkAuth.js";
 const userResolver = {
   Query: {
     getMe: async (parent, args, context, info) => {
@@ -38,6 +41,12 @@ const userResolver = {
   Mutation: {
     signUp: async (parent, args, context, info) => {
       const res = await createUser({ args, context });
+      return res;
+    },
+    logout: async (parent, args, context) => {
+      await isAuthorized({ context });
+      console.log("Logout");
+      const res = await logout({ context });
       return res;
     },
     signIn: async (parent, args, context, info) => {

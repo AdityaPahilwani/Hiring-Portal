@@ -1,3 +1,5 @@
+/** @format */
+
 import apollo from "apollo-server-express";
 const { gql } = apollo;
 const postDefs = gql`

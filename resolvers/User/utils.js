@@ -1,3 +1,5 @@
+/** @format */
+
 import USER from "../../Model/user.js";
 import SQL from "sequelize";
 
@@ -7,10 +9,9 @@ import { getLoggedInUser } from "../Middleware/checkAuth.js";
 import bcrypt from "bcryptjs";
 
 export const createUser = async ({ args, context }) => {
-  const { name, email, gender, bio, password } = args.input;
+  const { name, email, gender, bio, password, skills } = args.input;
   let resObj = {};
   let profilePic;
-
   if (gender === "Male") {
     profilePic =
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdDIZrF6XF_2t2UMsPyfkuwZfvagwvN-seTwA0LMHhlLAy7ykG56D7ALt54c-q9t3mMyc&usqp=CAU";
@@ -29,6 +30,7 @@ export const createUser = async ({ args, context }) => {
         bio,
         profilePic: profilePic,
         password: hashedPassword,
+        skills: skills,
       });
       context.req.session.userId = res.dataValues.id;
       resObj = {
@@ -75,7 +77,17 @@ export const signIn = async ({ args, context }) => {
     resObj = { error: "Custom error", success: false, message: "error" };
     console.log(err);
   }
+  return resObj;
+};
 
+export const logout = async ({ context }) => {
+  context.res.clearCookie("connect.sid", { path: "/" });
+  const resObj = {
+    success: true,
+    success: true,
+    message: "Logout Successfull",
+    data: null,
+  };
   return resObj;
 };
 
@@ -138,7 +150,8 @@ export const getUserWithId = async ({ args, context }) => {
 };
 
 export const searchUsers = async ({ args, context }) => {
-  let { search, skills } = args.input;
+  let { search, skills, pageNo } = args.input;
+  const limit = 10;
   let resObj = {};
   let searchObj = {};
   try {
@@ -151,17 +164,26 @@ export const searchUsers = async ({ args, context }) => {
     }
 
     let res = await USER.findAll({
+      offset: pageNo * limit,
+      limit: limit,
       where: { id: { [Op.ne]: ID }, ...searchObj },
     });
     let data = res?.map((item, index) => {
       return { ...item.dataValues };
     });
-
-    resObj = {
-      success: true,
-      message: "Fetch successful",
-      data: data,
-    };
+    if (data?.length > 0) {
+      resObj = {
+        success: true,
+        message: "Fetch successful",
+        data: data,
+      };
+    } else {
+      resObj = {
+        success: true,
+        message: "No Data",
+        data: data,
+      };
+    }
   } catch (err) {
     console.log(err);
     resObj = { error: "Not found", success: false, message: "error" };
