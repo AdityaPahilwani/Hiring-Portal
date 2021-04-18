@@ -1,3 +1,5 @@
+/** @format */
+
 import POST from "../../Model/post.js";
 import USER from "../../Model/user.js";
 import COMMENT from "../../Model/comment.js";

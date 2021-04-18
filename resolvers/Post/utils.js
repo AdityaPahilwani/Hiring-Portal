@@ -92,39 +92,42 @@ export const getPosts = async ({ args, context }) => {
 export const getPostWithId = async ({ args, context }) => {
   const { id } = args.input;
   let resObj = {};
+  let { following } = await getLoggedInUser({ args, context });
+  console.log(following);
   try {
-    let data = await POST.findOne(
-      {
-        where: { id: id },
-        include: [
-          {
-            ...basicUserDetails,
-          },
-        ],
-      },
-      {
-        include: [
-          {
-            ...basicUserDetails,
-          },
-          {
-            model: COMMENT,
-            attributes: ["id", "comment", "userId"],
-            order: [["createdAt", "DESC"]],
-            // limit: skipTopComments,
-            include: [
-              {
-                ...basicUserDetails,
-              },
-            ],
-          },
-        ],
-      }
-    );
-
+    let data = await POST.findOne({
+      where: { id: id },
+      include: [
+        {
+          ...basicUserDetails,
+        },
+      ],
+      include: [
+        {
+          ...basicUserDetails,
+        },
+        {
+          model: COMMENT,
+          attributes: ["id", "comment", "userId"],
+          order: [["createdAt", "DESC"]],
+          include: [
+            {
+              ...basicUserDetails,
+            },
+          ],
+        },
+      ],
+    });
     data = data?.dataValues;
-
-    const tempComments = data?.comments;
+    if (!following.includes(data.postedBy)) {
+        resObj = {
+          success: true,
+          message: "Not Authorized",
+          data: null,
+      };
+      return resObj
+    };
+    const tempComments = data?.comments.reverse();
     let comments = [];
     if (tempComments?.length > 0) {
       comments = tempComments.map((commentItem, index) => {
